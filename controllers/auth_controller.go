@@ -9,11 +9,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/o1egl/paseto"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var v2 = paseto.NewV2()
 
 // Register
 func Register(c *fiber.Ctx) error {

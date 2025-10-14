@@ -84,3 +84,46 @@ func UnpublishCourse(c *fiber.Ctx) error {
 	}
 	return c.JSON(course)
 }
+
+// EditCourse -> PUT /instructor/courses/:id (requires instructor)
+func EditCourse(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var payload struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	}
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	var course models.Course
+	if err := database.DB.First(&course, id).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "course not found"})
+	}
+
+	// Update fields
+	course.Title = payload.Title
+	course.Description = payload.Description
+
+	if err := database.DB.Save(&course).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(course)
+}
+
+// DeleteCourse -> DELETE /instructor/courses/:id (requires instructor)
+func DeleteCourse(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	var course models.Course
+	if err := database.DB.First(&course, id).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "course not found"})
+	}
+
+	if err := database.DB.Delete(&course).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(204).Send(nil)
+}
