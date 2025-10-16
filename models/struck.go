@@ -64,3 +64,13 @@ type Enrollment struct {
 	User     User   `gorm:"foreignKey:UserID"`
 	Course   Course `gorm:"foreignKey:CourseID"`
 }
+
+type Feedback struct {
+	gorm.Model
+	UserID   uint   `json:"user_id"`
+	CourseID uint   `json:"course_id"`
+	Rating   int    `json:"rating" gorm:"not null;check:rating >= 1 AND rating <= 5"` // 1 to 5
+	Comment  string `json:"comment" gorm:"type:text"`
+	User     User   `gorm:"foreignKey:UserID"`
+	Course   Course `gorm:"foreignKey:CourseID"`
+}

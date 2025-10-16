@@ -13,6 +13,7 @@ func SetupRoutes(app *fiber.App) {
 	api.Post("/auth/register", controllers.Register)
 	api.Post("/auth/login", controllers.Login)
 	api.Get("/auth/me", middlewares.AuthMiddleware(), controllers.Profile)
+	api.Post("/feedback", middlewares.AuthMiddleware(), controllers.SubmitFeedback)
 
 	// public course listing
 	api.Get("/courses", controllers.ListPublishedCourses)
@@ -26,11 +27,15 @@ func SetupRoutes(app *fiber.App) {
 	instr.Delete("/courses/:id", controllers.DeleteCourse)
 	instr.Put("/courses/:id/modules/:id", controllers.EditModule)
 	instr.Delete("/courses/:id/modules/:id", controllers.DeleteModule)
+	instr.Get("/earnings", controllers.InstructorEarnings)
 
 	// admin publish/unpublish (require auth + admin role)
 	admin := api.Group("/admin", middlewares.AuthMiddleware(), middlewares.RoleMiddleware("admin"))
 	admin.Put("/courses/:id/publish", controllers.PublishCourse)
 	admin.Put("/courses/:id/unpublish", controllers.UnpublishCourse)
+	admin.Get("/overview", controllers.AdminOverview)
+	admin.Get("/transactions", controllers.AdminTransactions)
+	admin.Get("/courses/:course_id/feedback", controllers.GetFeedbackByCourse)
 
 	// quiz routes
 	quiz := instr.Group("/courses/:course_id/modules/:module_id")
@@ -41,4 +46,9 @@ func SetupRoutes(app *fiber.App) {
 	me := api.Group("/me", middlewares.AuthMiddleware())
 	me.Get("/courses/:id/modules/quiz-results", controllers.GetQuizResults)
 	me.Get("/courses/:id/status", controllers.GetCourseStatus)
+
+	// payment routes
+	api.Post("/checkout", controllers.Checkout)
+	api.Post("/payment/notification", controllers.PaymentNotification)
+	api.Get("/me/courses", controllers.GetMyCourses)
 }
