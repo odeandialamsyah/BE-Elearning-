@@ -30,7 +30,7 @@ func ConnectDB(cfg *config.Config) {
 	}
 
 	// migrate
-	err = DB.AutoMigrate(&models.User{}, &models.Course{}, &models.Module{}, &models.Quiz{}, &models.QuizResult{}, &models.Order{}, &models.Enrollment{})
+	err = DB.AutoMigrate(&models.User{}, &models.Course{}, &models.Module{}, &models.Quiz{}, &models.QuizResult{}, &models.Order{}, &models.Enrollment{}, &models.Feedback{})
 	if err != nil {
 		log.Fatal("❌ Failed to migrate: ", err)
 	}

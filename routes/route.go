@@ -36,6 +36,7 @@ func SetupRoutes(app *fiber.App) {
 	admin.Get("/overview", controllers.AdminOverview)
 	admin.Get("/transactions", controllers.AdminTransactions)
 	admin.Get("/courses/:course_id/feedback", controllers.GetFeedbackByCourse)
+	admin.Get("/feedback", controllers.GetAllFeedback)
 
 	// quiz routes
 	quiz := instr.Group("/courses/:course_id/modules/:module_id")

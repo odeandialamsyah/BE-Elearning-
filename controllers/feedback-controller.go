@@ -40,6 +40,70 @@ func SubmitFeedback(c *fiber.Ctx) error {
 	})
 }
 
+func GetAllFeedback(c *fiber.Ctx) error {
+	// Query parameters
+	courseID := c.Query("course_id")
+	instructorID := c.Query("instructor_id")
+	userID := c.Query("user_id")
+	rating := c.Query("rating")
+	minRating := c.Query("min_rating")
+	maxRating := c.Query("max_rating")
+	sort := c.Query("sort", "desc") // default newest first
+
+	var feedbacks []models.Feedback
+	query := database.DB.Preload("User").Preload("Course")
+
+	// Filter by course
+	if courseID != "" {
+		query = query.Where("course_id = ?", courseID)
+	}
+
+	// Filter by instructor (join ke tabel course)
+	if instructorID != "" {
+		query = query.Joins("JOIN courses ON courses.id = feedback.course_id").
+			Where("courses.instructor_id = ?", instructorID)
+	}
+
+	// Filter by user
+	if userID != "" {
+		query = query.Where("user_id = ?", userID)
+	}
+
+	// Rating exact
+	if rating != "" {
+		query = query.Where("rating = ?", rating)
+	}
+
+	// Rating minimum
+	if minRating != "" {
+		query = query.Where("rating >= ?", minRating)
+	}
+
+	// Rating maksimum
+	if maxRating != "" {
+		query = query.Where("rating <= ?", maxRating)
+	}
+
+	// Sorting
+	if sort == "asc" {
+		query = query.Order("created_at ASC")
+	} else {
+		query = query.Order("created_at DESC")
+	}
+
+	// Execute
+	if err := query.Find(&feedbacks).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch feedback"})
+	}
+
+	return c.JSON(fiber.Map{
+		"total":     len(feedbacks),
+		"feedbacks": feedbacks,
+	})
+}
+
+
+
 // Ambil semua feedback untuk course tertentu
 func GetFeedbackByCourse(c *fiber.Ctx) error {
 	courseID, err := strconv.Atoi(c.Params("course_id"))
