@@ -67,3 +67,59 @@ func InstructorEarnings(c *fiber.Ctx) error {
 		"courses":        report,
 	})
 }
+
+func InstructorCourses(c *fiber.Ctx) error {
+	userIDStr := c.Locals("user_id").(string)
+
+	var courses []models.Course
+	if err := database.DB.Where("instructor_id = ?", userIDStr).Find(&courses).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"courses": courses,
+	})
+}
+
+func InstructorFeedback(c *fiber.Ctx) error {
+	userIDStr := c.Locals("user_id").(string)
+
+	var courses []models.Course
+	if err := database.DB.Where("instructor_id = ?", userIDStr).Find(&courses).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	var courseIDs []uint
+	for _, course := range courses {
+		courseIDs = append(courseIDs, course.ID)
+	}
+
+	var feedbacks []fiber.Map
+	if len(courseIDs) > 0 {
+		var records []models.Feedback
+		if err := database.DB.
+			Preload("User").
+			Preload("Course").
+			Where("course_id IN ?", courseIDs).
+			Find(&records).Error; err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		for _, fb := range records {
+			feedbacks = append(feedbacks, fiber.Map{
+				"id":            fb.ID,
+				"user_id":       fb.UserID,
+				"user_name":     fb.User.FullName,
+				"course_id":     fb.CourseID,
+				"course_title":  fb.Course.Title,
+				"rating":        fb.Rating,
+				"comment":       fb.Comment,
+				"created_at":    fb.CreatedAt,
+			})
+		}
+	}
+
+	return c.JSON(fiber.Map{
+		"feedbacks": feedbacks,
+	})
+}

@@ -30,6 +30,8 @@ func SetupRoutes(app *fiber.App) {
 	instr.Delete("/courses/:id/modules/:id", controllers.DeleteModule)
 	instr.Get("/earnings", controllers.InstructorEarnings)
 
+	instr.Get("/courses", controllers.InstructorCourses)
+	instr.Get("/feedback", controllers.InstructorFeedback)
 	// admin publish/unpublish (require auth + admin role)
 	admin := api.Group("/admin", middlewares.AuthMiddleware(), middlewares.RoleMiddleware("admin"))
 	admin.Put("/courses/:id/publish", controllers.PublishCourse)
