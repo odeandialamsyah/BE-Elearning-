@@ -115,3 +115,11 @@ func Profile(c *fiber.Ctx) error {
 		"joined":   user.CreatedAt.Format(time.RFC3339),
 	})
 }
+
+// Logout (stateless token-based): frontend should delete token; endpoint returns success
+func Logout(c *fiber.Ctx) error {
+	// Optionally, you could implement token blacklisting here.
+	return c.JSON(fiber.Map{
+		"message": "logout successful",
+	})
+}

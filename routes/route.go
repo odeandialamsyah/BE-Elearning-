@@ -12,6 +12,7 @@ func SetupRoutes(app *fiber.App) {
 
 	api.Post("/auth/register", controllers.Register)
 	api.Post("/auth/login", controllers.Login)
+	api.Post("/auth/logout", controllers.Logout)
 	api.Get("/auth/me", middlewares.AuthMiddleware(), controllers.Profile)
 	api.Post("/feedback", middlewares.AuthMiddleware(), controllers.SubmitFeedback)
 
@@ -37,6 +38,11 @@ func SetupRoutes(app *fiber.App) {
 	admin.Get("/transactions", controllers.AdminTransactions)
 	admin.Get("/courses/:course_id/feedback", controllers.GetFeedbackByCourse)
 	admin.Get("/feedback", controllers.GetAllFeedback)
+
+	admin.Get("/users", controllers.GetAllUsers)
+	admin.Get("/users/:id", controllers.GetUserByID)
+	admin.Put("/users/:id", controllers.UpdateUser)
+	admin.Delete("/users/:id", controllers.DeleteUser)
 
 	// quiz routes
 	quiz := instr.Group("/courses/:course_id/modules/:module_id")
