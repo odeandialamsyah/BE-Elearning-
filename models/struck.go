@@ -24,7 +24,7 @@ type Course struct {
 type Module struct {
     gorm.Model
     Title    string `json:"title" gorm:"not null"`
-    Content  string `json:"content" gorm:"type:text"`
+    PDFUrl    string `json:"pdf_url"` 
     CourseID uint   `json:"course_id"`
     Order    int    `json:"order" gorm:"default:0"`
 }

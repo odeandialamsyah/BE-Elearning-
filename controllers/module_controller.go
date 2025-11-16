@@ -3,71 +3,126 @@ package controllers
 import (
 	"backend-elearning/database"
 	"backend-elearning/models"
+	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 // AddModuleToCourse -> POST /instructor/courses/:id/modules (instructor only)
 func AddModuleToCourse(c *fiber.Ctx) error {
-	courseID := c.Params("id")
+    courseID := c.Params("id")
 
-	var payload struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
-		Order   int    `json:"order"`
-	}
-	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
-	}
+    // Ambil form-data
+    title := c.FormValue("title")
+    orderStr := c.FormValue("order")
 
-	// ensure course exists
-	var course models.Course
-	if err := database.DB.First(&course, courseID).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "course not found"})
-	}
+    if title == "" {
+        return c.Status(400).JSON(fiber.Map{"error": "title is required"})
+    }
 
-	module := models.Module{
-		Title:   payload.Title,
-		Content: payload.Content,
-		Order:   payload.Order,
-		CourseID: course.ID,
-	}
+    // Konversi order ke int
+    order, _ := strconv.Atoi(orderStr)
 
-	if err := database.DB.Create(&module).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
+    // Cek course exist
+    var course models.Course
+    if err := database.DB.First(&course, courseID).Error; err != nil {
+        return c.Status(404).JSON(fiber.Map{"error": "course not found"})
+    }
 
-	return c.Status(201).JSON(module)
+    // Ambil file PDF (opsional)
+    file, _ := c.FormFile("pdf")
+
+    // Buat module dulu
+    module := models.Module{
+        Title:    title,
+        Order:    order,
+        CourseID: course.ID,
+    }
+
+    if err := database.DB.Create(&module).Error; err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    // Jika tidak ada file PDF → return module tanpa PDF
+    if file == nil {
+        return c.Status(201).JSON(fiber.Map{
+            "message": "module created (without PDF)",
+            "module":  module,
+        })
+    }
+
+    // Validasi PDF
+    if file.Header.Get("Content-Type") != "application/pdf" {
+        return c.Status(400).JSON(fiber.Map{"error": "file must be PDF"})
+    }
+
+    // Tentukan lokasi penyimpanan
+    filename := fmt.Sprintf("uploads/modules/%d-%s", module.ID, file.Filename)
+
+    if err := c.SaveFile(file, filename); err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    // Update module dengan PDFUrl
+    module.PDFUrl = "/" + filename
+    database.DB.Save(&module)
+
+    return c.Status(201).JSON(fiber.Map{
+        "message": "module created successfully",
+        "module":  module,
+    })
 }
 
 // EditModule -> PUT /instructor/courses/:course_id/modules/:id (requires instructor)
 func EditModule(c *fiber.Ctx) error {
-	id := c.Params("id")
+    moduleID := c.Params("id")
 
-	var payload struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
-		Order   int    `json:"order"`
-	}
-	if err := c.BodyParser(&payload); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
-	}
+    title := c.FormValue("title")
+    orderStr := c.FormValue("order")
+    order, _ := strconv.Atoi(orderStr)
 
-	var module models.Module
-	if err := database.DB.First(&module, id).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "module not found"})
-	}
+    var module models.Module
+    if err := database.DB.First(&module, moduleID).Error; err != nil {
+        return c.Status(404).JSON(fiber.Map{"error": "module not found"})
+    }
 
-	// Update fields
-	module.Title = payload.Title
-	module.Content = payload.Content
-	module.Order = payload.Order
+    // Update Title & Order
+    if title != "" {
+        module.Title = title
+    }
+    module.Order = order
 
-	if err := database.DB.Save(&module).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
+    // Cek PDF baru (opsional)
+    pdfFile, _ := c.FormFile("pdf")
+    if pdfFile != nil {
+        if pdfFile.Header.Get("Content-Type") != "application/pdf" {
+            return c.Status(400).JSON(fiber.Map{"error": "file must be a PDF"})
+        }
 
-	return c.JSON(module)
+        // Hapus PDF lama jika ada
+        if module.PDFUrl != "" {
+            _ = os.Remove("." + module.PDFUrl)
+        }
+
+        // Simpan PDF baru
+        filename := fmt.Sprintf("uploads/modules/%d-%s", module.ID, pdfFile.Filename)
+        if err := c.SaveFile(pdfFile, filename); err != nil {
+            return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+        }
+
+        module.PDFUrl = "/" + filename
+    }
+
+    if err := database.DB.Save(&module).Error; err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    return c.JSON(fiber.Map{
+        "message": "module updated successfully",
+        "module":  module,
+    })
 }
 
 // DeleteModule -> DELETE /instructor/courses/:course_id/modules/:id (requires instructor)
