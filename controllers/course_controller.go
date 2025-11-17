@@ -47,10 +47,15 @@ func ListPublishedCourses(c *fiber.Ctx) error {
 	return c.JSON(courses)
 }
 
-// GetCourseDetail -> GET /courses/:id
 func GetCourseDetail(c *fiber.Ctx) error {
     courseID := c.Params("id")
-    userID := c.Locals("user_id").(string)
+
+    // Cek user login
+    userIDVal := c.Locals("user_id")
+    if userIDVal == nil {
+        return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
+    }
+    userID := userIDVal.(string)
 
     // Cek apakah course exist
     var course models.Course
@@ -58,17 +63,21 @@ func GetCourseDetail(c *fiber.Ctx) error {
         return c.Status(404).JSON(fiber.Map{"error": "course not found"})
     }
 
-    // Cek apakah user sudah enroll (jika bukan instructor course)
+    // Cek enrollment (jika bukan instructor)
     var enrollment models.Enrollment
-    err := database.DB.Where("user_id = ? AND course_id = ?", userID, course.ID).First(&enrollment).Error
+    err := database.DB.Where("user_id = ? AND course_id = ?", userID, course.ID).
+        First(&enrollment).Error
 
-    if err != nil && strconv.Itoa(int(course.InstructorID)) != userID {
-        return c.Status(403).JSON(fiber.Map{
-            "error": "You must purchase this course to access the content",
-        })
+    if err != nil {
+        // user bukan instructor → wajib sudah beli
+        if strconv.Itoa(int(course.InstructorID)) != userID {
+            return c.Status(403).JSON(fiber.Map{
+                "error": "You must purchase this course to access the content",
+            })
+        }
     }
 
-    // Ambil module + pdf_url
+    // Fetch modules
     var modules []models.Module
     if err := database.DB.Where("course_id = ?", course.ID).
         Order("`order` ASC").
@@ -76,13 +85,13 @@ func GetCourseDetail(c *fiber.Ctx) error {
         return c.Status(500).JSON(fiber.Map{"error": err.Error()})
     }
 
-    // Ambil quiz per module (opsional)
+    // Fetch quiz per module (optional)
     type ModuleResponse struct {
-        ID      uint             `json:"id"`
-        Title   string           `json:"title"`
-        PDFUrl  string           `json:"pdf_url"`
-        Order   int              `json:"order"`
-        Quizzes []models.Quiz    `json:"quizzes"`
+        ID      uint          `json:"id"`
+        Title   string        `json:"title"`
+        PDFUrl  string        `json:"pdf_url"`
+        Order   int           `json:"order"`
+        Quizzes []models.Quiz `json:"quizzes"`
     }
 
     var modulesWithQuiz []ModuleResponse
@@ -96,21 +105,19 @@ func GetCourseDetail(c *fiber.Ctx) error {
             Title:   m.Title,
             PDFUrl:  m.PDFUrl,
             Order:   m.Order,
-            Quizzes: quizzes, // Quiz tanpa answer
+            Quizzes: quizzes,
         })
     }
 
     return c.JSON(fiber.Map{
         "course": fiber.Map{
-            "id":           course.ID,
-            "title":        course.Title,
-            "description":  course.Description,
-            "published":    course.Published,
+            "id":          course.ID,
+            "title":       course.Title,
+            "description": course.Description,
         },
         "modules": modulesWithQuiz,
     })
 }
-
 
 // PublishCourse -> PUT /instructor/courses/:id/publish (admin only)
 func PublishCourse(c *fiber.Ctx) error {
