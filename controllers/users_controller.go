@@ -37,25 +37,16 @@ func UpdateUser(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{"error": "user not found"})
 	}
 
-	var payload struct {
-		FullName string `json:"full_name"`
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Role     string `json:"role"` // user, instructor, admin
-	}
-
-	if err := c.BodyParser(&payload); err != nil {
+	var updates map[string]interface{}
+	if err := c.BodyParser(&updates); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	user.FullName = payload.FullName
-	user.Username = payload.Username
-	user.Email = payload.Email
-	user.Role = payload.Role
-
-	if err := database.DB.Save(&user).Error; err != nil {
+	if err := database.DB.Model(&user).Updates(updates).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	database.DB.First(&user, id)
 
 	return c.JSON(fiber.Map{
 		"message": "user updated successfully",
@@ -80,5 +71,3 @@ func DeleteUser(c *fiber.Ctx) error {
 		"message": "user deleted successfully",
 	})
 }
-
-
