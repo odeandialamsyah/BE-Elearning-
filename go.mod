@@ -7,6 +7,7 @@ toolchain go1.24.7
 require (
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/joho/godotenv v1.5.1
+	github.com/midtrans/midtrans-go v1.3.8
 	github.com/o1egl/paseto v1.0.0
 	golang.org/x/crypto v0.41.0
 	gorm.io/driver/mysql v1.6.0
@@ -27,7 +28,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/midtrans/midtrans-go v1.3.8 // indirect
 	github.com/pkg/errors v0.8.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

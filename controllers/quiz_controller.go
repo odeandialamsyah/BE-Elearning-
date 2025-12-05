@@ -10,9 +10,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// CreateQuiz -> POST /courses/:course_id/modules/:id/quizzes
+// CreateQuiz -> POST /courses/:course_id/modules/:module_id/quizzes
 func CreateQuiz(c *fiber.Ctx) error {
-	moduleIDParam := c.Params("id")
+	moduleIDParam := c.Params("module_id")
 	moduleID, err := strconv.ParseUint(moduleIDParam, 10, 32)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid module ID"})
@@ -68,9 +68,9 @@ func CreateQuiz(c *fiber.Ctx) error {
 	})
 }
 
-// ListQuizzes -> GET /courses/:course_id/modules/:id/quizzes
+// ListQuizzes -> GET /courses/:course_id/modules/:module_id/quizzes
 func ListQuizzes(c *fiber.Ctx) error {
-	moduleIDParam := c.Params("id")
+	moduleIDParam := c.Params("module_id")
 	moduleID, err := strconv.ParseUint(moduleIDParam, 10, 32)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid module ID"})

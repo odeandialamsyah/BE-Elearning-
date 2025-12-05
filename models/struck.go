@@ -17,7 +17,6 @@ type Course struct {
     Description  string    `json:"description" gorm:"type:text"` 
     InstructorID uint      `json:"instructor_id"`
     Published    bool      `json:"published" gorm:"default:false"`
-    Price        float64   `json:"price" gorm:"default:0"`
     Modules      []Module  `json:"modules" gorm:"constraint:OnDelete:CASCADE"`
     Feedbacks    []Feedback `json:"feedbacks" gorm:"constraint:OnDelete:CASCADE"`
 }
@@ -26,8 +25,8 @@ type Module struct {
     gorm.Model
     Title    string `json:"title" gorm:"not null"`
     PDFUrl   string `json:"pdf_url"`
+    Order    int    `json:"order"`
     CourseID uint   `json:"course_id"`
-    Order    int    `json:"order" gorm:"default:0"`
     Quizzes  []Quiz `json:"quizzes" gorm:"constraint:OnDelete:CASCADE"`
 }
 
@@ -47,25 +46,13 @@ type QuizResult struct {
     Passed   bool `json:"passed"`
 }
 
-type Order struct {
-    gorm.Model
-    UserID   uint    `json:"user_id"`
-    CourseID uint    `json:"course_id"`
-    Amount   float64 `json:"amount"`
-    Status   string  `json:"status" gorm:"default:'pending'"`
-    SnapURL  string  `json:"snap_url"`
-
-    User   User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-    Course Course `gorm:"foreignKey:CourseID;constraint:OnDelete:CASCADE"`
-}
-
 type Enrollment struct {
-    gorm.Model
-    UserID   uint `json:"user_id"`
-    CourseID uint `json:"course_id"`
+	gorm.Model
+	UserID   uint `json:"user_id"`
+	CourseID uint `json:"course_id"`
 
-    User   User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-    Course Course `gorm:"foreignKey:CourseID;constraint:OnDelete:CASCADE"`
+	User   User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Course Course `gorm:"foreignKey:CourseID;constraint:OnDelete:CASCADE"`
 }
 
 type Feedback struct {
