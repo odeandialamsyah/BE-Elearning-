@@ -51,14 +51,13 @@ func ListPublishedCourses(c *fiber.Ctx) error {
 func GetCourseDetail(c *fiber.Ctx) error {
     courseID := c.Params("id")
 
-    // Ambil user_id dari JWT (AMAN TANPA PANIC)
     uid := c.Locals("user_id")
     if uid == nil {
         return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
     }
     userID := uid.(string)
 
-    // Ambil course + preload modules
+    // Preload modules
     var course models.Course
     err := database.DB.
         Preload("Modules", func(db *gorm.DB) *gorm.DB {
@@ -70,26 +69,32 @@ func GetCourseDetail(c *fiber.Ctx) error {
         return c.Status(404).JSON(fiber.Map{"error": "course not found"})
     }
 
-    // Pastikan instructor benar
+    // Cek owner
     if strconv.Itoa(int(course.InstructorID)) != userID {
         return c.Status(403).JSON(fiber.Map{"error": "not your course"})
     }
 
-    // Response untuk FE
+    // Ambil quiz per modul
     type ModuleResponse struct {
-        ID     uint   `json:"id"`
-        Title  string `json:"title"`
-        PDFUrl string `json:"pdf_url"`
-        Order  int    `json:"order"`
+        ID      uint          `json:"id"`
+        Title   string        `json:"title"`
+        PDFUrl  string        `json:"pdf_url"`
+        Order   int           `json:"order"`
+        Quizzes []models.Quiz `json:"quizzes"`
     }
 
-    var moduleList []ModuleResponse
+    var modulesWithQuiz []ModuleResponse
+
     for _, m := range course.Modules {
-        moduleList = append(moduleList, ModuleResponse{
-            ID:     m.ID,
-            Title:  m.Title,
-            PDFUrl: m.PDFUrl,
-			Order:  m.Order,
+        var quizzes []models.Quiz
+        database.DB.Where("module_id = ?", m.ID).Find(&quizzes)
+
+        modulesWithQuiz = append(modulesWithQuiz, ModuleResponse{
+            ID:      m.ID,
+            Title:   m.Title,
+            PDFUrl:  m.PDFUrl,
+            Order:   m.Order,
+            Quizzes: quizzes,
         })
     }
 
@@ -100,9 +105,10 @@ func GetCourseDetail(c *fiber.Ctx) error {
             "description": course.Description,
             "published":   course.Published,
         },
-        "modules": moduleList,
+        "modules": modulesWithQuiz,
     })
 }
+
 
 
 

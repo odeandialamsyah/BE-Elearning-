@@ -19,6 +19,9 @@ func SetupRoutes(app *fiber.App) {
 	// public course listing
 	api.Get("/courses", controllers.ListPublishedCourses)
 
+	// public: list quizzes for a module (answers hidden)
+	api.Get("/courses/:course_id/modules/:module_id/quizzes", controllers.ListQuizzes)
+
 	// instructor routes (require auth + instructor role)
 	instr := api.Group("/instructor", middlewares.AuthMiddleware(), middlewares.RoleMiddleware("instructor"))
 	instr.Get("/courses/:id", controllers.GetCourseDetail)
