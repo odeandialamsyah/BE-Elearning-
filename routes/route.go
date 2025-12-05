@@ -28,16 +28,20 @@ func SetupRoutes(app *fiber.App) {
 	instr.Delete("/courses/:id", controllers.DeleteCourse)
 	instr.Put("/courses/:id/modules/:id", controllers.EditModule)
 	instr.Delete("/courses/:id/modules/:id", controllers.DeleteModule)
-	instr.Get("/earnings", controllers.InstructorEarnings)
+	// quiz routes
+	quiz := instr.Group("/courses/:course_id/modules/:module_id")
+	quiz.Post("/quizzes", controllers.CreateQuiz)
+	quiz.Get("/quizzes", controllers.ListQuizzes)
+	quiz.Post("/submit", controllers.SubmitQuiz)
 
 	instr.Get("/courses", controllers.InstructorCourses)
+	instr.Get("/earnings", controllers.InstructorEarnings)
 	instr.Get("/feedback", controllers.InstructorFeedback)
 	// admin publish/unpublish (require auth + admin role)
 	admin := api.Group("/admin", middlewares.AuthMiddleware(), middlewares.RoleMiddleware("admin"))
 	admin.Put("/courses/:id/publish", controllers.PublishCourse)
 	admin.Put("/courses/:id/unpublish", controllers.UnpublishCourse)
 	admin.Get("/overview", controllers.AdminOverview)
-	admin.Get("/transactions", controllers.AdminTransactions)
 	admin.Get("/courses/:course_id/feedback", controllers.GetFeedbackByCourse)
 	admin.Get("/feedback", controllers.GetAllFeedback)
 
@@ -45,12 +49,6 @@ func SetupRoutes(app *fiber.App) {
 	admin.Get("/users/:id", controllers.GetUserByID)
 	admin.Put("/users/:id", controllers.UpdateUser)
 	admin.Delete("/users/:id", controllers.DeleteUser)
-
-	// quiz routes
-	quiz := instr.Group("/courses/:course_id/modules/:module_id")
-	quiz.Post("/quizzes", controllers.CreateQuiz)
-	quiz.Get("/quizzes", controllers.ListQuizzes)
-	quiz.Post("/submit", controllers.SubmitQuiz)
 
 	me := api.Group("/me", middlewares.AuthMiddleware())
 	me.Get("/courses/:id/modules/quiz-results", controllers.GetQuizResults)

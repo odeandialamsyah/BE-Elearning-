@@ -104,7 +104,6 @@ func GetCourseDetail(c *fiber.Ctx) error {
             ID:      m.ID,
             Title:   m.Title,
             PDFUrl:  m.PDFUrl,
-            Order:   m.Order,
             Quizzes: quizzes,
         })
     }

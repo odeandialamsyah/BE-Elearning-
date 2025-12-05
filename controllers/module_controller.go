@@ -5,7 +5,6 @@ import (
 	"backend-elearning/models"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -16,14 +15,10 @@ func AddModuleToCourse(c *fiber.Ctx) error {
 
     // Ambil form-data
     title := c.FormValue("title")
-    orderStr := c.FormValue("order")
 
     if title == "" {
         return c.Status(400).JSON(fiber.Map{"error": "title is required"})
     }
-
-    // Konversi order ke int
-    order, _ := strconv.Atoi(orderStr)
 
     // Cek course exist
     var course models.Course
@@ -37,7 +32,6 @@ func AddModuleToCourse(c *fiber.Ctx) error {
     // Buat module dulu
     module := models.Module{
         Title:    title,
-        Order:    order,
         CourseID: course.ID,
     }
 
@@ -80,8 +74,6 @@ func EditModule(c *fiber.Ctx) error {
     moduleID := c.Params("id")
 
     title := c.FormValue("title")
-    orderStr := c.FormValue("order")
-    order, _ := strconv.Atoi(orderStr)
 
     var module models.Module
     if err := database.DB.First(&module, moduleID).Error; err != nil {
@@ -92,7 +84,6 @@ func EditModule(c *fiber.Ctx) error {
     if title != "" {
         module.Title = title
     }
-    module.Order = order
 
     // Cek PDF baru (opsional)
     pdfFile, _ := c.FormFile("pdf")
