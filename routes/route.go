@@ -55,9 +55,6 @@ func SetupRoutes(app *fiber.App) {
 	me := api.Group("/me", middlewares.AuthMiddleware())
 	me.Get("/courses/:id/modules/quiz-results", controllers.GetQuizResults)
 	me.Get("/courses/:id/status", controllers.GetCourseStatus)
-
-	// payment routes
-	api.Post("/checkout", controllers.Checkout)
-	api.Post("/payment/notification", controllers.PaymentNotification)
-	api.Get("/me/courses", controllers.GetMyCourses)
+	me.Get("/courses", controllers.GetMyCourses)
+	me.Post("/courses/:id/enroll", controllers.EnrollCourse)
 }
