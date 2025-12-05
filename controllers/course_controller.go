@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 // CreateCourse -> POST /instructor/courses (requires instructor)
@@ -50,61 +51,45 @@ func ListPublishedCourses(c *fiber.Ctx) error {
 func GetCourseDetail(c *fiber.Ctx) error {
     courseID := c.Params("id")
 
-    // Cek user login
-    userIDVal := c.Locals("user_id")
-    if userIDVal == nil {
+    // Ambil user_id dari JWT (AMAN TANPA PANIC)
+    uid := c.Locals("user_id")
+    if uid == nil {
         return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
     }
-    userID := userIDVal.(string)
+    userID := uid.(string)
 
-    // Cek apakah course exist
+    // Ambil course + preload modules
     var course models.Course
-    if err := database.DB.First(&course, courseID).Error; err != nil {
+    err := database.DB.
+        Preload("Modules", func(db *gorm.DB) *gorm.DB {
+            return db.Order("`order` ASC")
+        }).
+        First(&course, courseID).Error
+
+    if err != nil {
         return c.Status(404).JSON(fiber.Map{"error": "course not found"})
     }
 
-    // Cek enrollment (jika bukan instructor)
-    var enrollment models.Enrollment
-    err := database.DB.Where("user_id = ? AND course_id = ?", userID, course.ID).
-        First(&enrollment).Error
-
-    if err != nil {
-        // user bukan instructor → wajib sudah beli
-        if strconv.Itoa(int(course.InstructorID)) != userID {
-            return c.Status(403).JSON(fiber.Map{
-                "error": "You must purchase this course to access the content",
-            })
-        }
+    // Pastikan instructor benar
+    if strconv.Itoa(int(course.InstructorID)) != userID {
+        return c.Status(403).JSON(fiber.Map{"error": "not your course"})
     }
 
-    // Fetch modules
-    var modules []models.Module
-    if err := database.DB.Where("course_id = ?", course.ID).
-        Order("`order` ASC").
-        Find(&modules).Error; err != nil {
-        return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-    }
-
-    // Fetch quiz per module (optional)
+    // Response untuk FE
     type ModuleResponse struct {
-        ID      uint          `json:"id"`
-        Title   string        `json:"title"`
-        PDFUrl  string        `json:"pdf_url"`
-        Order   int           `json:"order"`
-        Quizzes []models.Quiz `json:"quizzes"`
+        ID     uint   `json:"id"`
+        Title  string `json:"title"`
+        PDFUrl string `json:"pdf_url"`
+        Order  int    `json:"order"`
     }
 
-    var modulesWithQuiz []ModuleResponse
-
-    for _, m := range modules {
-        var quizzes []models.Quiz
-        database.DB.Where("module_id = ?", m.ID).Find(&quizzes)
-
-        modulesWithQuiz = append(modulesWithQuiz, ModuleResponse{
-            ID:      m.ID,
-            Title:   m.Title,
-            PDFUrl:  m.PDFUrl,
-            Quizzes: quizzes,
+    var moduleList []ModuleResponse
+    for _, m := range course.Modules {
+        moduleList = append(moduleList, ModuleResponse{
+            ID:     m.ID,
+            Title:  m.Title,
+            PDFUrl: m.PDFUrl,
+			Order:  m.Order,
         })
     }
 
@@ -113,10 +98,13 @@ func GetCourseDetail(c *fiber.Ctx) error {
             "id":          course.ID,
             "title":       course.Title,
             "description": course.Description,
+            "published":   course.Published,
         },
-        "modules": modulesWithQuiz,
+        "modules": moduleList,
     })
 }
+
+
 
 // PublishCourse -> PUT /instructor/courses/:id/publish (admin only)
 func PublishCourse(c *fiber.Ctx) error {

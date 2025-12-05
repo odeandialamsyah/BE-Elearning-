@@ -25,6 +25,7 @@ type Module struct {
     gorm.Model
     Title    string `json:"title" gorm:"not null"`
     PDFUrl   string `json:"pdf_url"`
+    Order    int    `json:"order"`
     CourseID uint   `json:"course_id"`
     Quizzes  []Quiz `json:"quizzes" gorm:"constraint:OnDelete:CASCADE"`
 }

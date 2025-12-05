@@ -5,20 +5,25 @@ import (
 	"backend-elearning/models"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 // AddModuleToCourse -> POST /instructor/courses/:id/modules (instructor only)
 func AddModuleToCourse(c *fiber.Ctx) error {
-    courseID := c.Params("id")
+    courseID := c.Params("course_id")
 
     // Ambil form-data
     title := c.FormValue("title")
+    orderStr := c.FormValue("order")
 
     if title == "" {
         return c.Status(400).JSON(fiber.Map{"error": "title is required"})
     }
+
+    // Konversi order ke int
+    order, _ := strconv.Atoi(orderStr)
 
     // Cek course exist
     var course models.Course
@@ -32,6 +37,7 @@ func AddModuleToCourse(c *fiber.Ctx) error {
     // Buat module dulu
     module := models.Module{
         Title:    title,
+        Order:    order,
         CourseID: course.ID,
     }
 
@@ -71,19 +77,24 @@ func AddModuleToCourse(c *fiber.Ctx) error {
 
 // EditModule -> PUT /instructor/courses/:course_id/modules/:id (requires instructor)
 func EditModule(c *fiber.Ctx) error {
-    moduleID := c.Params("id")
+    courseID := c.Params("course_id")
+    moduleID := c.Params("module_id")
 
     title := c.FormValue("title")
+    orderStr := c.FormValue("order")
+    order, _ := strconv.Atoi(orderStr)
 
     var module models.Module
-    if err := database.DB.First(&module, moduleID).Error; err != nil {
-        return c.Status(404).JSON(fiber.Map{"error": "module not found"})
+    // Ensure module exists and belongs to the given course
+    if err := database.DB.Where("id = ? AND course_id = ?", moduleID, courseID).First(&module).Error; err != nil {
+        return c.Status(404).JSON(fiber.Map{"error": "module not found for this course"})
     }
 
     // Update Title & Order
     if title != "" {
         module.Title = title
     }
+    module.Order = order
 
     // Cek PDF baru (opsional)
     pdfFile, _ := c.FormFile("pdf")
@@ -118,16 +129,20 @@ func EditModule(c *fiber.Ctx) error {
 
 // DeleteModule -> DELETE /instructor/courses/:course_id/modules/:id (requires instructor)
 func DeleteModule(c *fiber.Ctx) error {
-	id := c.Params("id")
+    courseID := c.Params("course_id")
+    id := c.Params("module_id")
 
-	var module models.Module
-	if err := database.DB.First(&module, id).Error; err != nil {
-		return c.Status(404).JSON(fiber.Map{"error": "module not found"})
-	}
+    var module models.Module
+    if err := database.DB.Where("id = ? AND course_id = ?", id, courseID).First(&module).Error; err != nil {
+        return c.Status(404).JSON(fiber.Map{"error": "module not found for this course"})
+    }
 
 	if err := database.DB.Delete(&module).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(204).Send(nil)
+	return c.JSON(fiber.Map{
+        "message": "module deleted successfully",
+    })
+
 }

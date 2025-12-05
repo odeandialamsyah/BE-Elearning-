@@ -18,16 +18,16 @@ func SetupRoutes(app *fiber.App) {
 
 	// public course listing
 	api.Get("/courses", controllers.ListPublishedCourses)
-	api.Get("/courses/:id", controllers.GetCourseDetail)
 
 	// instructor routes (require auth + instructor role)
 	instr := api.Group("/instructor", middlewares.AuthMiddleware(), middlewares.RoleMiddleware("instructor"))
+	instr.Get("/courses/:id", controllers.GetCourseDetail)
 	instr.Post("/courses", controllers.CreateCourse)
-	instr.Post("/courses/:id/modules", controllers.AddModuleToCourse)
+	instr.Post("/courses/:course_id/modules", controllers.AddModuleToCourse)
 	instr.Put("/courses/:id", controllers.EditCourse)
 	instr.Delete("/courses/:id", controllers.DeleteCourse)
-	instr.Put("/courses/:id/modules/:id", controllers.EditModule)
-	instr.Delete("/courses/:id/modules/:id", controllers.DeleteModule)
+	instr.Put("/courses/:course_id/modules/:module_id", controllers.EditModule)
+	instr.Delete("/courses/:course_id/modules/:module_id", controllers.DeleteModule)
 	// quiz routes
 	quiz := instr.Group("/courses/:course_id/modules/:module_id")
 	quiz.Post("/quizzes", controllers.CreateQuiz)
