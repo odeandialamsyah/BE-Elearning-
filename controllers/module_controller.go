@@ -1,13 +1,14 @@
 package controllers
 
 import (
-	"backend-elearning/database"
-	"backend-elearning/models"
-	"fmt"
-	"os"
-	"strconv"
+    "backend-elearning/database"
+    "backend-elearning/models"
+    "fmt"
+    "os"
+    "path/filepath"
+    "strconv"
 
-	"github.com/gofiber/fiber/v2"
+    "github.com/gofiber/fiber/v2"
 )
 
 // AddModuleToCourse -> POST /instructor/courses/:id/modules (instructor only)
@@ -146,3 +147,32 @@ func DeleteModule(c *fiber.Ctx) error {
     })
 
 }
+
+// GetModulePDF -> GET /courses/:course_id/modules/:module_id/pdf
+// Returns the PDF file for a module if it exists. Public endpoint.
+func GetModulePDF(c *fiber.Ctx) error {
+    courseID := c.Params("course_id")
+    moduleID := c.Params("module_id")
+
+    var module models.Module
+    if err := database.DB.Where("id = ? AND course_id = ?", moduleID, courseID).First(&module).Error; err != nil {
+        return c.Status(404).JSON(fiber.Map{"error": "module not found for this course"})
+    }
+
+    if module.PDFUrl == "" {
+        return c.Status(404).JSON(fiber.Map{"error": "no PDF available for this module"})
+    }
+
+    // PDFUrl is stored like "/uploads/modules/123-file.pdf"
+    filePath := "." + module.PDFUrl
+    if _, err := os.Stat(filePath); os.IsNotExist(err) {
+        return c.Status(404).JSON(fiber.Map{"error": "PDF file not found on server"})
+    }
+
+    // Set inline Content-Disposition so browser can preview PDF
+    filename := filepath.Base(filePath)
+    c.Set("Content-Disposition", fmt.Sprintf("inline; filename=\"%s\"", filename))
+
+    return c.SendFile(filePath)
+}
+

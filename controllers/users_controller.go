@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func GetAllUsers(c *fiber.Ctx) error {
@@ -132,4 +133,102 @@ func GetMyCourses(c *fiber.Ctx) error {
 	return c.JSON(courses)
 }
 
+// Instructor
+func InstructorUpdateProfile(c *fiber.Ctx) error {
+    uid := c.Locals("user_id")
+    if uid == nil {
+        return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
+    }
 
+    // 🔥 convert string → uint
+    uidStr := uid.(string)
+    userID, err := strconv.ParseUint(uidStr, 10, 32)
+    if err != nil {
+        return c.Status(400).JSON(fiber.Map{"error": "Invalid User ID"})
+    }
+
+    var body struct {
+        FullName string `json:"full_name"`
+        Email    string `json:"email"`
+        Username string `json:"username"`
+    }
+
+    if err := c.BodyParser(&body); err != nil {
+        return c.Status(400).JSON(fiber.Map{"error": "invalid body"})
+    }
+
+    var user models.User
+    if err := database.DB.First(&user, uint(userID)).Error; err != nil {
+        return c.Status(404).JSON(fiber.Map{"error": "user not found"})
+    }
+
+    user.FullName = body.FullName
+    user.Email = body.Email
+    user.Username = body.Username
+
+    database.DB.Save(&user)
+
+    return c.JSON(fiber.Map{
+        "message": "profile updated",
+        "user":    user,
+    })
+}
+
+func InstructorChangePassword(c *fiber.Ctx) error {
+    uid := c.Locals("user_id")
+    if uid == nil {
+        return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
+    }
+
+    uidStr := uid.(string)
+    userID, err := strconv.ParseUint(uidStr, 10, 32)
+    if err != nil {
+        return c.Status(400).JSON(fiber.Map{"error": "Invalid User ID"})
+    }
+
+    var body struct {
+        OldPassword string `json:"old_password"`
+        NewPassword string `json:"new_password"`
+    }
+
+    if err := c.BodyParser(&body); err != nil {
+        return c.Status(400).JSON(fiber.Map{"error": "invalid body"})
+    }
+
+    var user models.User
+    if err := database.DB.First(&user, uint(userID)).Error; err != nil {
+        return c.Status(404).JSON(fiber.Map{"error": "user not found"})
+    }
+
+    // cek password lama
+    if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.OldPassword)) != nil {
+        return c.Status(400).JSON(fiber.Map{"error": "old password is incorrect"})
+    }
+
+    // hash password baru
+    hashed, _ := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 14)
+    user.Password = string(hashed)
+
+    database.DB.Save(&user)
+
+    return c.JSON(fiber.Map{"message": "password updated"})
+}
+
+func InstructorDeleteAccount(c *fiber.Ctx) error {
+    uid := c.Locals("user_id")
+    if uid == nil {
+        return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
+    }
+
+    uidStr := uid.(string)
+    userID, err := strconv.ParseUint(uidStr, 10, 32)
+    if err != nil {
+        return c.Status(400).JSON(fiber.Map{"error": "Invalid User ID"})
+    }
+
+    if err := database.DB.Delete(&models.User{}, uint(userID)).Error; err != nil {
+        return c.Status(500).JSON(fiber.Map{"error": "failed to delete account"})
+    }
+
+    return c.JSON(fiber.Map{"message": "account deleted"})
+}

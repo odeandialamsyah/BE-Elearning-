@@ -24,10 +24,15 @@ func SetupRoutes(app *fiber.App) {
 
 	// instructor routes (require auth + instructor role)
 	instr := api.Group("/instructor", middlewares.AuthMiddleware(), middlewares.RoleMiddleware("instructor"))
+	instr.Put("/profile", controllers.InstructorUpdateProfile)
+	instr.Put("/profile/password", controllers.InstructorChangePassword)
+	instr.Delete("/profile", controllers.InstructorDeleteAccount)
+	// course
 	instr.Get("/courses/:id", controllers.GetCourseDetail)
 	instr.Post("/courses", controllers.CreateCourse)
-	instr.Post("/courses/:course_id/modules", controllers.AddModuleToCourse)
 	instr.Put("/courses/:id", controllers.EditCourse)
+	//modules
+	instr.Post("/courses/:course_id/modules", controllers.AddModuleToCourse)
 	instr.Delete("/courses/:id", controllers.DeleteCourse)
 	instr.Put("/courses/:course_id/modules/:module_id", controllers.EditModule)
 	instr.Delete("/courses/:course_id/modules/:module_id", controllers.DeleteModule)
@@ -37,10 +42,15 @@ func SetupRoutes(app *fiber.App) {
 	quiz.Get("/quizzes", controllers.ListQuizzes)
 	quiz.Post("/submit", controllers.SubmitQuiz)
 
+	// instructor: get module PDF (protected)
+	instr.Get("/courses/:course_id/modules/:module_id/pdf", controllers.GetModulePDF)
+
 	instr.Get("/courses", controllers.InstructorCourses)
 	instr.Get("/earnings", controllers.InstructorEarnings)
 	instr.Get("/feedback", controllers.InstructorFeedback)
-	// admin publish/unpublish (require auth + admin role)
+
+
+	// admin (require auth + admin role)
 	admin := api.Group("/admin", middlewares.AuthMiddleware(), middlewares.RoleMiddleware("admin"))
 	admin.Put("/courses/:id/publish", controllers.PublishCourse)
 	admin.Put("/courses/:id/unpublish", controllers.UnpublishCourse)

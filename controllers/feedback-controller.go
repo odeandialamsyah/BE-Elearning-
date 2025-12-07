@@ -9,6 +9,7 @@ import (
 )
 
 // Submit feedback untuk course
+
 func SubmitFeedback(c *fiber.Ctx) error {
 	var input struct {
 		CourseID uint   `json:"course_id"`
@@ -20,8 +21,15 @@ func SubmitFeedback(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Ambil user ID dari context (middleware auth)
-	userID := c.Locals("user_id").(uint)
+	// Ambil user_id sebagai string lalu convert ke uint
+	uidStr := c.Locals("user_id").(string)
+
+	uidUint, err := strconv.ParseUint(uidStr, 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid user ID"})
+	}
+
+	userID := uint(uidUint)
 
 	feedback := models.Feedback{
 		UserID:   userID,
@@ -32,6 +40,15 @@ func SubmitFeedback(c *fiber.Ctx) error {
 
 	if err := database.DB.Create(&feedback).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Gagal menyimpan feedback"})
+	}
+
+	// Reload feedback with associations so User and Course are populated in response
+	if err := database.DB.Preload("User").Preload("Course").First(&feedback, feedback.ID).Error; err != nil {
+		// If preload fails, still return created feedback (without relations)
+		return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+			"message": "Feedback berhasil dikirim",
+			"data":    feedback,
+		})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
