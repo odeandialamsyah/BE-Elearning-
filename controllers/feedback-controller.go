@@ -113,9 +113,43 @@ func GetAllFeedback(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch feedback"})
 	}
 
+	// Build response with course name, instructor name and date
+	var out []fiber.Map
+	for _, fb := range feedbacks {
+		courseTitle := ""
+		instructorName := ""
+		if fb.Course.ID != 0 {
+			courseTitle = fb.Course.Title
+			// load instructor
+			var instr models.User
+			if fb.Course.InstructorID != 0 {
+				if err := database.DB.First(&instr, fb.Course.InstructorID).Error; err == nil {
+					instructorName = instr.FullName
+				}
+			}
+		}
+
+		userName := ""
+		if fb.User.ID != 0 {
+			userName = fb.User.FullName
+		}
+
+		out = append(out, fiber.Map{
+			"id":              fb.ID,
+			"user_id":         fb.UserID,
+			"user_name":       userName,
+			"course_id":       fb.CourseID,
+			"course_title":    courseTitle,
+			"instructor_name": instructorName,
+			"rating":          fb.Rating,
+			"comment":         fb.Comment,
+			"created_at":      fb.CreatedAt,
+		})
+	}
+
 	return c.JSON(fiber.Map{
-		"total":     len(feedbacks),
-		"feedbacks": feedbacks,
+		"total":     len(out),
+		"feedbacks": out,
 	})
 }
 

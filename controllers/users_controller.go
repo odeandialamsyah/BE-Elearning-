@@ -133,8 +133,8 @@ func GetMyCourses(c *fiber.Ctx) error {
 	return c.JSON(courses)
 }
 
-// Instructor
-func InstructorUpdateProfile(c *fiber.Ctx) error {
+// setting user profile
+func UpdateProfile(c *fiber.Ctx) error {
     uid := c.Locals("user_id")
     if uid == nil {
         return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
@@ -174,7 +174,7 @@ func InstructorUpdateProfile(c *fiber.Ctx) error {
     })
 }
 
-func InstructorChangePassword(c *fiber.Ctx) error {
+func ChangePassword(c *fiber.Ctx) error {
     uid := c.Locals("user_id")
     if uid == nil {
         return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})
@@ -214,7 +214,7 @@ func InstructorChangePassword(c *fiber.Ctx) error {
     return c.JSON(fiber.Map{"message": "password updated"})
 }
 
-func InstructorDeleteAccount(c *fiber.Ctx) error {
+func DeleteAccount(c *fiber.Ctx) error {
     uid := c.Locals("user_id")
     if uid == nil {
         return c.Status(401).JSON(fiber.Map{"error": "unauthorized"})

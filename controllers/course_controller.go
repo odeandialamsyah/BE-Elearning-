@@ -45,7 +45,92 @@ func ListPublishedCourses(c *fiber.Ctx) error {
 	if err := database.DB.Where("published = ?", true).Find(&courses).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(courses)
+	var out []fiber.Map
+	for _, course := range courses {
+		var instructor models.User
+		instructorName := ""
+		if course.InstructorID != 0 {
+			if err := database.DB.First(&instructor, course.InstructorID).Error; err == nil {
+				instructorName = instructor.FullName
+			}
+		}
+		out = append(out, fiber.Map{
+			"id":          course.ID,
+			"title":       course.Title,
+			"description": course.Description,
+			"published":   course.Published,
+			"instructor": fiber.Map{"id": course.InstructorID, "name": instructorName},
+		})
+	}
+
+	return c.JSON(out)
+}
+
+// ListUnpublishedCourses -> GET /admin/courses/unpublished (admin only)
+func ListUnpublishedCourses(c *fiber.Ctx) error {
+	var courses []models.Course
+	if err := database.DB.Where("published = ?", false).Find(&courses).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	var out []fiber.Map
+	for _, course := range courses {
+		var instructor models.User
+		instructorName := ""
+		if course.InstructorID != 0 {
+			if err := database.DB.First(&instructor, course.InstructorID).Error; err == nil {
+				instructorName = instructor.FullName
+			}
+		}
+		out = append(out, fiber.Map{
+			"id":          course.ID,
+			"title":       course.Title,
+			"description": course.Description,
+			"published":   course.Published,
+			"instructor": fiber.Map{"id": course.InstructorID, "name": instructorName},
+		})
+	}
+
+	return c.JSON(out)
+}
+
+// ListAllCoursesByStatus -> GET /admin/courses/status (admin only)
+// returns grouped courses by published status
+func ListAllCoursesByStatus(c *fiber.Ctx) error {
+	var published []models.Course
+	var unpublished []models.Course
+
+	if err := database.DB.Where("published = ?", true).Find(&published).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	if err := database.DB.Where("published = ?", false).Find(&unpublished).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	build := func(courses []models.Course) []fiber.Map {
+		var res []fiber.Map
+		for _, course := range courses {
+			var instructor models.User
+			instructorName := ""
+			if course.InstructorID != 0 {
+				if err := database.DB.First(&instructor, course.InstructorID).Error; err == nil {
+					instructorName = instructor.FullName
+				}
+			}
+			res = append(res, fiber.Map{
+				"id":          course.ID,
+				"title":       course.Title,
+				"description": course.Description,
+				"published":   course.Published,
+				"instructor":  fiber.Map{"id": course.InstructorID, "name": instructorName},
+			})
+		}
+		return res
+	}
+
+	return c.JSON(fiber.Map{
+		"published":   build(published),
+		"unpublished": build(unpublished),
+	})
 }
 
 func GetCourseDetail(c *fiber.Ctx) error {
@@ -108,8 +193,6 @@ func GetCourseDetail(c *fiber.Ctx) error {
         "modules": modulesWithQuiz,
     })
 }
-
-
 
 
 // PublishCourse -> PUT /instructor/courses/:id/publish (admin only)
