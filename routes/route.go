@@ -69,6 +69,9 @@ func SetupRoutes(app *fiber.App) {
 	admin.Delete("/profile", controllers.DeleteAccount)
 
 	me := api.Group("/me", middlewares.AuthMiddleware())
+	me.Put("/profile", controllers.UpdateProfile)
+	me.Put("/profile/password", controllers.ChangePassword)
+	me.Delete("/profile", controllers.DeleteAccount)
 	me.Get("/courses/:id/modules/quiz-results", controllers.GetQuizResults)
 	me.Get("/courses/:id/status", controllers.GetCourseStatus)
 	me.Get("/courses/:id/modules", controllers.GetEnrolledCourseModules)
