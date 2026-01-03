@@ -109,6 +109,12 @@ func SubmitQuiz(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid user ID"})
 	}
 
+	// Check if user is enrolled in the course
+	var enrollment models.Enrollment
+	if err := database.DB.Where("user_id = ? AND course_id = ?", userID, courseID).First(&enrollment).Error; err != nil {
+		return c.Status(403).JSON(fiber.Map{"error": "user not enrolled in this course"})
+	}
+
 	// Payload berisi array JSON
 	var payload []struct {
 		QuizID uint   `json:"quiz_id"`

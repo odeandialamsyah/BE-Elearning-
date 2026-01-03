@@ -19,8 +19,7 @@ func SetupRoutes(app *fiber.App) {
 	// public course listing
 	api.Get("/courses", controllers.ListPublishedCourses)
 
-	// public: list quizzes for a module (answers hidden)
-	api.Get("/courses/:course_id/modules/:module_id/quizzes", controllers.ListQuizzes)
+
 
 	// instructor routes (require auth + instructor role)
 	instr := api.Group("/instructor", middlewares.AuthMiddleware(), middlewares.RoleMiddleware("instructor"))
@@ -72,6 +71,12 @@ func SetupRoutes(app *fiber.App) {
 	me := api.Group("/me", middlewares.AuthMiddleware())
 	me.Get("/courses/:id/modules/quiz-results", controllers.GetQuizResults)
 	me.Get("/courses/:id/status", controllers.GetCourseStatus)
+	me.Get("/courses/:id/modules", controllers.GetEnrolledCourseModules)
 	me.Get("/courses", controllers.GetMyCourses)
+	me.Get("/enrollments", controllers.GetMyEnrollments)
 	me.Post("/courses/:id/enroll", controllers.EnrollCourse)
+	me.Get("/courses/:course_id/modules/:module_id/pdf", controllers.GetModulePDF)
+	me.Post("/courses/:course_id/modules/:module_id/submit", controllers.SubmitQuiz)
+		// public: list quizzes for a module (answers hidden)
+	me.Get("/courses/:course_id/modules/:module_id/quizzes", controllers.ListQuizzes)
 }

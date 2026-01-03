@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func GetAllUsers(c *fiber.Ctx) error {
@@ -131,6 +132,102 @@ func GetMyCourses(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(courses)
+}
+
+// GetMyEnrollments -> GET /me/enrollments
+func GetMyEnrollments(c *fiber.Ctx) error {
+	userIDStr := c.Locals("user_id").(string)
+	userID, _ := strconv.ParseUint(userIDStr, 10, 32)
+
+	var enrollments []models.Enrollment
+	if err := database.DB.Preload("Course").Where("user_id = ?", uint(userID)).Find(&enrollments).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	var enrollmentList []fiber.Map
+	for _, e := range enrollments {
+		enrollmentList = append(enrollmentList, fiber.Map{
+			"id":            e.ID,
+			"course_id":     e.Course.ID,
+			"course_title":  e.Course.Title,
+			"description":   e.Course.Description,
+			"enrolled_at":   e.CreatedAt,
+		})
+	}
+
+	return c.JSON(enrollmentList)
+}
+
+// GetEnrolledCourseModules -> GET /me/courses/:id/modules
+func GetEnrolledCourseModules(c *fiber.Ctx) error {
+	courseIDParam := c.Params("id")
+	courseID, err := strconv.ParseUint(courseIDParam, 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid course ID"})
+	}
+
+	userIDStr := c.Locals("user_id").(string)
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid user ID"})
+	}
+
+	// Check if user is enrolled
+	var enrollment models.Enrollment
+	if err := database.DB.Where("user_id = ? AND course_id = ?", uint(userID), uint(courseID)).First(&enrollment).Error; err != nil {
+		return c.Status(403).JSON(fiber.Map{"error": "not enrolled in this course"})
+	}
+
+	// Get course with modules
+	var course models.Course
+	if err := database.DB.Preload("Modules", func(db *gorm.DB) *gorm.DB {
+		return db.Order("`order` ASC")
+	}).First(&course, uint(courseID)).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "course not found"})
+	}
+
+	// Build response with modules and quizzes (answers hidden)
+	type ModuleResponse struct {
+		ID     uint `json:"id"`
+		Title  string `json:"title"`
+		PDFUrl string `json:"pdf_url"`
+		Order  int `json:"order"`
+		Quizzes []fiber.Map `json:"quizzes"`
+	}
+
+	var modulesWithQuiz []ModuleResponse
+
+	for _, m := range course.Modules {
+		var quizzes []models.Quiz
+		database.DB.Where("module_id = ?", m.ID).Find(&quizzes)
+
+		var quizList []fiber.Map
+		for _, q := range quizzes {
+			quizList = append(quizList, fiber.Map{
+				"id":      q.ID,
+				"question": q.Question,
+				"options": q.Options,
+				// answer hidden for students
+			})
+		}
+
+		modulesWithQuiz = append(modulesWithQuiz, ModuleResponse{
+			ID:      m.ID,
+			Title:   m.Title,
+			PDFUrl:  m.PDFUrl,
+			Order:   m.Order,
+			Quizzes: quizList,
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"course": fiber.Map{
+			"id":          course.ID,
+			"title":       course.Title,
+			"description": course.Description,
+		},
+		"modules": modulesWithQuiz,
+	})
 }
 
 // setting user profile
