@@ -7,7 +7,6 @@ toolchain go1.24.7
 require (
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/joho/godotenv v1.5.1
-	github.com/midtrans/midtrans-go v1.3.8
 	github.com/o1egl/paseto v1.0.0
 	golang.org/x/crypto v0.41.0
 	gorm.io/driver/mysql v1.6.0
