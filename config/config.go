@@ -18,24 +18,27 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
-	err := godotenv.Load()
-	if err != nil {
+	// Load .env hanya untuk local development
+	if err := godotenv.Load(); err != nil {
 		log.Println("⚠️ No .env file found, using system env")
 	}
 
 	return &Config{
 		AppPort:      getEnv("APP_PORT", "8080"),
-		DBUser:       getEnv("DB_USER", "root"),
-		DBPass:       getEnv("DB_PASS", ""),
-		DBHost:       getEnv("DB_HOST", "127.0.0.1"),
-		DBPort:       getEnv("DB_PORT", "3306"),
-		DBName:       getEnv("DB_NAME", "elearning_db"),
-		PasetoSecret: getEnv("PASETO_SECRET", "changeme"),
+
+		// MySQL (Railway / Docker)
+		DBUser: getEnv("DB_USER", ""),
+		DBPass: getEnv("DB_PASS", ""),
+		DBHost: getEnv("DB_HOST", "mysql"),
+		DBPort: getEnv("DB_PORT", "3306"),
+		DBName: getEnv("DB_NAME", "railway"),
+
+		PasetoSecret: getEnv("PASETO_SECRET", ""),
 	}
 }
 
 func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
+	if value, ok := os.LookupEnv(key); ok && value != "" {
 		return value
 	}
 	return fallback

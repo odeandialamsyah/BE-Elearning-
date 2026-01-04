@@ -1,0 +1,42 @@
+services:
+  app:
+    build: .
+    container_name: elearning-app
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: railway
+      DB_USER: root
+      DB_PASSWORD: NwQyzzZrCHTCBGbWyJeroodauKEaYlph
+    networks:
+      - elearning_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: elearning-mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: NwQyzzZrCHTCBGbWyJeroodauKEaYlph
+      MYSQL_DATABASE: railway
+      MYSQL_USER: root
+      MYSQL_PASSWORD: NwQyzzZrCHTCBGbWyJeroodauKEaYlph
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - elearning_network
+
+volumes:
+  mysql_data:
+
+networks:
+  gis_network:
+    driver: bridge
