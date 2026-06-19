@@ -24,9 +24,9 @@ func main() {
 
 	// Middleware: CORS
 	app.Use(cors.New(cors.Config{
-		 AllowOrigins: "https://nesyasal.github.io",
+		AllowOrigins:     "*",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowHeaders:     "*",
 		AllowCredentials: true,
 	}))
 
