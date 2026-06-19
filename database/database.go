@@ -3,26 +3,19 @@ package database
 import (
 	"backend-elearning/config"
 	"backend-elearning/models"
-	"crypto/tls"
 	"fmt"
 	"log"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-
-	mysqlDriver "github.com/go-sql-driver/mysql"
 )
 
 var DB *gorm.DB
 
 func ConnectDB(cfg *config.Config) {
 
-	mysqlDriver.RegisterTLSConfig("tidb", &tls.Config{
-		MinVersion: tls.VersionTLS12,
-	})
-
 	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?tls=tidb&charset=utf8mb4&parseTime=True&loc=Local",
+		"%s:%s@tcp(%s:%s)/%s?tls=true&charset=utf8mb4&parseTime=True&loc=Local",
 		cfg.DBUser,
 		cfg.DBPass,
 		cfg.DBHost,
