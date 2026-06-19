@@ -15,9 +15,6 @@ type Config struct {
 	DBPort       string
 	DBName       string
 	PasetoSecret string
-
-	// CORS
-	CorsOrigin string
 }
 
 func LoadConfig() *Config {
@@ -29,7 +26,7 @@ func LoadConfig() *Config {
 	return &Config{
 		AppPort: getEnv("PORT", "8080"),
 
-		// MySQL
+		// MySQL (Railway / Docker)
 		DBUser: getEnv("DB_USER", "root"),
 		DBPass: getEnv("DB_PASS", ""),
 		DBHost: getEnv("DB_HOST", "127.0.0.1"),
@@ -37,9 +34,6 @@ func LoadConfig() *Config {
 		DBName: getEnv("DB_NAME", "elearning_db"),
 
 		PasetoSecret: getEnv("PASETO_SECRET_KEY", ""),
-
-		// CORS
-		CorsOrigin: getEnv("CORS_ORIGIN", "https://nesyasal.github.io"),
 	}
 }
 
