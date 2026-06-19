@@ -13,9 +13,9 @@ var pasetoV2 = paseto.NewV2()
 // GeneratePasetoToken membuat token baru
 func GeneratePasetoToken(userID uint, role string) (string, error) {
 	// Ambil secret dari ENV
-	secret := os.Getenv("PASETO_SECRET")
+	secret := os.Getenv("PASETO_SECRET_KEY")
 	if len(secret) < 32 {
-		return "", fmt.Errorf("PASETO_SECRET must be at least 32 characters")
+		return "", fmt.Errorf("PASETO_SECRET_KEY must be at least 32 characters")
 	}
 
 	// Expired 24 jam
