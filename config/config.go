@@ -24,16 +24,16 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		AppPort:      getEnv("APP_PORT", "8080"),
+		AppPort:      getEnv("PORT", "8080"),
 
 		// MySQL (Railway / Docker)
-		DBUser: getEnv("DB_USER", ""),
+		DBUser: getEnv("DB_USER", "root"),
 		DBPass: getEnv("DB_PASS", ""),
-		DBHost: getEnv("DB_HOST", "mysql"),
+		DBHost: getEnv("DB_HOST", "127.0.0.1"),
 		DBPort: getEnv("DB_PORT", "3306"),
-		DBName: getEnv("DB_NAME", "railway"),
+		DBName: getEnv("DB_NAME", "elearning_db"),
 
-		PasetoSecret: getEnv("PASETO_SECRET", ""),
+		PasetoSecret: getEnv("PASETO_SECRET_KEY", ""),
 	}
 }
 

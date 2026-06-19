@@ -15,6 +15,8 @@ func SetupRoutes(app *fiber.App) {
 	api.Post("/auth/logout", controllers.Logout)
 	api.Get("/auth/me", middlewares.AuthMiddleware(), controllers.Profile)
 	api.Post("/feedback", middlewares.AuthMiddleware(), controllers.SubmitFeedback)
+	api.Get("/courses/:id/rating", middlewares.AuthMiddleware(), controllers.GetMyCourseRating)
+
 
 	// public course listing
 	api.Get("/courses", controllers.ListPublishedCourses)

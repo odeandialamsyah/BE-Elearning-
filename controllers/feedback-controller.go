@@ -172,3 +172,31 @@ func GetFeedbackByCourse(c *fiber.Ctx) error {
 		"feedbacks": feedbacks,
 	})
 }
+
+func GetMyCourseRating(c *fiber.Ctx) error {
+	courseID, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid course ID",
+		})
+	}
+
+	uidStr := c.Locals("user_id").(string)
+	uid, _ := strconv.ParseUint(uidStr, 10, 32)
+
+	var feedback models.Feedback
+	err = database.DB.
+		Where("course_id = ? AND user_id = ?", uint(courseID), uint(uid)).
+		First(&feedback).Error
+
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "No rating yet",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"rating":  feedback.Rating,
+		"comment": feedback.Comment,
+	})
+}
